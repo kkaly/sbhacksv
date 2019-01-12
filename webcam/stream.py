@@ -51,7 +51,7 @@ def try1():
     #stream2.set(4,360)
 
     fourcc = cv2.VideoWriter_fourcc('H','2', '6', '4')
-    cv2.namedWindow("Disparity Map", cv2.WINDOW_NORMAL)
+    #cv2.namedWindow("Disparity Map", cv2.WINDOW_NORMAL)
 
     bsize = 5
 
@@ -90,13 +90,13 @@ def try1():
         ret2, frame2 = stream2.read()
         if ret1==True:
             cv2.imshow('left',frame1)
-            cv2.imshow('right',frame2)
+            #cv2.imshow('right',frame2)
 
             # compute disparity
             if disp_count == disp_frq:
                 disparity = stereo.compute(frame1, frame2).astype(np.float32) / 16.0
                 disparity = (disparity-min_disp)/num_disp
-                cv2.imshow('Disparity Map', disparity)
+                #cv2.imshow('Disparity Map', disparity)
                 disp_count = 0
             if counter == frq:
                 counter = 0
@@ -126,7 +126,13 @@ def try1():
 @threadpool
 def intelligence(image, disparity):
     global net
+    left = 0
+    right = 0
+    middle = 0
     (h, w) = image.shape[:2]
+    print(w)
+    print("width)")
+    left_ignore = 200
     blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 0.007843, (300, 300), 127.5)
     counter = 0
     print("[INFO] computing object detections...")
@@ -171,24 +177,65 @@ def intelligence(image, disparity):
                             print('---------------------------------------------poop')
 
                 depth = statistics.median(depthList)
-                if depth < 0:
-                    writer(3)
-                    print("a")
-                elif depth < 0.12:
-                    writer(0)
-                    print("b")
-                elif depth < 0.22:
-                    writer(1)
-                    print("c")
-                elif depth < 0.32:
-                    writer(2)
-                    print("d")
+                #depth = np.percentile(depthList, 75)
+                if (startX + endX) / 2 < (w-left_ignore) / 3:
+                    if depth < 0:
+                        left = max(left, 1)
+                        print("al")
+                    elif depth < 0.12:
+                        left = max(left, 1)
+                        print("bl")
+                    elif depth < 0.22:
+                        left =  max(left, 1)
+                        print("cl")
+                    elif depth < 0.32:
+                        left =  max(left, 2)
+                        print("dl")
+                    else:
+                        left =  max(left, 3)
+                        print("e")
+                elif (startX + endX) / 2 < (w-left_ignore) * 2 / 3:
+                    if depth < 0:
+                        middle = max(middle, 1)
+                        print("am")
+                    elif depth < 0.12:
+                        middle = max(middle, 1)
+                        print("bm")
+                    elif depth < 0.32:
+                        middle =  max(middle, 1)
+                        print("cm")
+                    elif depth < 0.42:
+                        middle =  max(middle, 2)
+                        print("dm")
+                    else:
+                        middle =  max(middle, 3)
+                        print("em")
                 else:
-                    writer(3)
-                    print("e")
+                    if depth < 0:
+                        right = max(right, 1)
+                        print("ar")
+                    elif depth < 0.12:
+                        right = max(right, 1)
+                        print("br")
+                    elif depth < 0.22:
+                        right =  max(right, 1)
+                        print("cr")
+                    elif depth < 0.32:
+                        right =  max(right, 2)
+                        print("dr")
+                    else:
+                        right =  max(right, 3)
+                        print("er")
                 print("DEPTH" + str(depth))
-            else:
-                writer(0)
+    print("setting the values finally)")
+    #writer(middle)
+    #writer(left + 4)
+    #writer(right + 9)
+    num = (right << 4) + ((left) << 2) + ((middle))
+    writer(num)
+    #writer(3 + 4)
+    #writer(3 + 9)
+    print(str(left) + " " + str(middle) + "  " + str(right))
     return image
 
 # show the output image
