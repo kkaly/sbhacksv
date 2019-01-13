@@ -18,6 +18,9 @@ def threadpool(f, executor=None):
 
     return wrap
 
+headers = {'charset': 'utf-8'}
+url = 'https://kw6npjqmpe.execute-api.us-east-1.amazonaws.com/prod/insert-into-db'
+dangerous_points = []
 
 BLACK = [0,0,0]
 try:
@@ -123,6 +126,14 @@ def try1():
         else:
             break
 
+
+    try:
+        for i in range(0, len(dangerous_points)):
+            data = {"action": "insert", "fields": {"long": dangerous_points[i][1], "lat": dangerous_points[i][0], "dangerRating": str(3)}}
+            response = requests.post(url, json=data, headers = headers)
+    except:
+        print("unable to push data to cloud")
+        
     # Release everything if job is finished
     stream1.release()
     cv2.destroyAllWindows()
@@ -293,6 +304,16 @@ def intelligence(image):
     #writer(3 + 4)
     #writer(3 + 9)
     print(str(left) + " " + str(middle) + "  " + str(right))
+    try:
+        if left == 3 or right == 3 or middle == 3 and database_counter % 60 == 0:
+            r = requests.get('https://ipinfo.io')
+            json = r.json()
+            loc = json["loc"]
+            lat = loc.split(",")[0]
+            lon = loc.split(",")[1]
+            dangerous_point.append([lat, lon])
+    except:
+        print("unable to denote location as dangerous")
     return image
 
 # show the output image
